@@ -1,0 +1,10 @@
+int main(){
+    int idade = 19;
+    char sexo ="M";
+    float altura = 1.74;
+    // comentario em linha unica
+    /*
+    * comentario em bloco
+    */
+    printf("Ola mundo!");
+}
