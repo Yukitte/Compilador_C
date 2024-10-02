@@ -1,9 +1,9 @@
 #ifndef TOKEN_H
 #define TOKEN_H
 
-// Token types
+// Tipos de tokens
 typedef enum {
-    // Keywords
+    // Palavras-chave
     TOKEN_PROGRAM,
     TOKEN_VAR,
     TOKEN_INTEGER,
@@ -20,7 +20,7 @@ typedef enum {
     TOKEN_READ,
     TOKEN_WRITE,
 
-    // Operators
+    // Operadores
     TOKEN_ASSIGN,    // :=
     TOKEN_PLUS,      // +
     TOKEN_MINUS,     // -
@@ -33,7 +33,7 @@ typedef enum {
     TOKEN_LTE,       // <=
     TOKEN_GTE,       // >=
 
-    // Punctuation
+    // Pontuação
     TOKEN_SEMICOLON, // ;
     TOKEN_COLON,     // :
     TOKEN_COMMA,     // ,
@@ -41,19 +41,19 @@ typedef enum {
     TOKEN_LPAREN,    // (
     TOKEN_RPAREN,    // )
 
-    // Others
-    TOKEN_IDENTIFIER,
-    TOKEN_INTEGER_LITERAL,
-    TOKEN_REAL_LITERAL,
-    TOKEN_BOOLEAN_LITERAL,
-    TOKEN_STRING_LITERAL,
+    // Outros
+    TOKEN_IDENTIFIER,        // Identificador
+    TOKEN_INTEGER_LITERAL,   // Literal inteiro
+    TOKEN_REAL_LITERAL,      // Literal real
+    TOKEN_BOOLEAN_LITERAL,   // Literal booleano
+    TOKEN_STRING_LITERAL,    // Literal de string
 
-    // Special tokens
-    TOKEN_EOF,
-    TOKEN_ERROR,
+    // Tokens especiais
+    TOKEN_EOF,               // Fim de arquivo
+    TOKEN_ERROR,             // Erro
 } TokenType;
 
-// Token structure
+// Estrutura do Token
 typedef struct {
     TokenType type;
     char *lexeme;
@@ -61,7 +61,7 @@ typedef struct {
     int column;
 } Token;
 
-// Function prototypes
+// Protótipos de função
 Token *create_token(TokenType type, const char *lexeme, int line, int column);
 void free_token(Token *token);
 
