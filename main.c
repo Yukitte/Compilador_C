@@ -11,7 +11,7 @@
 
 HashTable* keyword_table;
 
-// Function to convert TokenType to string
+// Função para converter o tipo TokenType em string
 const char* token_type_to_string(TokenType type) {
     switch (type) {
         case TOKEN_PROGRAM: return "TOKEN_PROGRAM";
@@ -52,11 +52,12 @@ const char* token_type_to_string(TokenType type) {
         case TOKEN_BOOLEAN_LITERAL: return "TOKEN_BOOLEAN_LITERAL";
         case TOKEN_STRING_LITERAL: return "TOKEN_STRING_LITERAL";
         case TOKEN_EOF: return "TOKEN_EOF";
-        case TOKEN_ERROR: return "TOKEN_ERROR";
+        case TOKEN_ERROR: return "\e[0;31mTOKEN_ERROR\e[0m";
         default: return "UNKNOWN_TOKEN";
     }
 }
 
+// Inicializa a tabela de palavras-chave
 void init_keyword_table() {
     keyword_table = create_table(CAPACITY);
     ht_insert(keyword_table, "program", "TOKEN_PROGRAM");
@@ -78,6 +79,7 @@ void init_keyword_table() {
     ht_insert(keyword_table, "false", "TOKEN_BOOLEAN_LITERAL");
 }
 
+// Obtém o token correspondente à palavra-chave
 TokenType get_keyword_token(const char* lexeme) {
     char* token_str = ht_search(keyword_table, lexeme);
     if (token_str == NULL) {
@@ -89,6 +91,7 @@ TokenType get_keyword_token(const char* lexeme) {
     return (TokenType)atoi(token_str);
 }
 
+// Cria um novo token
 Token* create_token(TokenType type, const char* lexeme, int line, int column) {
     Token* token = (Token*)malloc(sizeof(Token));
     token->type = type;
@@ -98,6 +101,7 @@ Token* create_token(TokenType type, const char* lexeme, int line, int column) {
     return token;
 }
 
+// Libera a memória de um token
 void free_token(Token* token) {
     if (token) {
         free(token->lexeme);
@@ -105,6 +109,7 @@ void free_token(Token* token) {
     }
 }
 
+// Obtém o próximo token do arquivo
 Token* get_next_token(FILE* file, int* line, int* column) {
     int ch = fgetc(file);
     while (isspace(ch)) {
@@ -124,7 +129,7 @@ Token* get_next_token(FILE* file, int* line, int* column) {
     char lexeme[MAX_STRING_LENGTH + 1];
     int lexeme_len = 0;
 
-    // Handle comments
+    // Lida com comentários
     if (ch == '{') {
         while ((ch = fgetc(file)) != EOF && ch != '}') {
             if (ch == '\n') {
@@ -135,14 +140,14 @@ Token* get_next_token(FILE* file, int* line, int* column) {
             }
         }
         if (ch == EOF) {
-            return create_token(TOKEN_ERROR, "Unclosed comment", *line, *column);
+            return create_token(TOKEN_ERROR, "Comentario nao fechado", *line, *column);
         }
         (*column)++;
-        return get_next_token(file, line, column); // Recursive call to get the next token
+        return get_next_token(file, line, column); // Chamada recursiva para pegar o próximo token
     }
 
     if (isalpha(ch) || ch == '_') {
-        // Identifier or keyword
+        // Identificador ou palavra-chave
         while (isalnum(ch) || ch == '_') {
             lexeme[lexeme_len++] = ch;
             (*column)++;
@@ -155,7 +160,7 @@ Token* get_next_token(FILE* file, int* line, int* column) {
     }
 
     if (isdigit(ch)) {
-        // Number (integer or real)
+        // Número (inteiro ou real)
         while (isdigit(ch) || ch == '.') {
             lexeme[lexeme_len++] = ch;
             (*column)++;
@@ -168,21 +173,21 @@ Token* get_next_token(FILE* file, int* line, int* column) {
     }
 
     if (ch == '\'') {
-        // String literal
+        // Literal de string
         lexeme[lexeme_len++] = ch;
         (*column)++;
         while ((ch = fgetc(file)) != EOF && ch != '\'') {
             if (lexeme_len >= MAX_STRING_LENGTH) {
-                return create_token(TOKEN_ERROR, "String literal too long", *line, *column);
+                return create_token(TOKEN_ERROR, "Literal de string muito longo", *line, *column);
             }
             lexeme[lexeme_len++] = ch;
             (*column)++;
             if (ch == '\n') {
-                return create_token(TOKEN_ERROR, "Unclosed string literal", *line, *column);
+                return create_token(TOKEN_ERROR, "Literal de string não fechado", *line, *column);
             }
         }
         if (ch == EOF) {
-            return create_token(TOKEN_ERROR, "Unclosed string literal", *line, *column);
+            return create_token(TOKEN_ERROR, "Literal de string não fechado", *line, *column);
         }
         lexeme[lexeme_len++] = ch;
         lexeme[lexeme_len] = '\0';
@@ -190,7 +195,7 @@ Token* get_next_token(FILE* file, int* line, int* column) {
         return create_token(TOKEN_STRING_LITERAL, lexeme, *line, *column - lexeme_len + 1);
     }
 
-    // Single-character tokens and operators
+    // Tokens de um único caractere e operadores
     lexeme[0] = ch;
     lexeme[1] = '\0';
     (*column)++;
@@ -246,19 +251,28 @@ Token* get_next_token(FILE* file, int* line, int* column) {
         case ')': return create_token(TOKEN_RPAREN, lexeme, *line, *column);
     }
 
-    // Unrecognized character
+    // Caractere não reconhecido
     return create_token(TOKEN_ERROR, lexeme, *line, *column);
 }
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
-        fprintf(stderr, "Usage: %s <input_file>\n", argv[0]);
+        fprintf(stderr, "Uso: %s <arquivo_de_entrada>\n", argv[0]);
         return 1;
     }
 
     FILE* input_file = fopen(argv[1], "r");
     if (input_file == NULL) {
-        fprintf(stderr, "Error opening file: %s\n", argv[1]);
+        fprintf(stderr, "Erro ao abrir arquivo: %s\n", argv[1]);
+        return 1;
+    }
+
+    char output_filename[256];
+    snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
+    FILE* output_file = fopen(output_filename, "w");
+    if (output_file == NULL) {
+        fprintf(stderr, "Erro ao criar o arquivo de saída: %s\n", output_filename);
+        fclose(input_file);
         return 1;
     }
 
@@ -269,12 +283,20 @@ int main(int argc, char* argv[]) {
 
     do {
         token = get_next_token(input_file, &line, &column);
-        printf("Token: %-20s, Lexeme: %-15s, Line: %d, Column: %d\n",
-               token_type_to_string(token->type), token->lexeme, token->line, token->column);
+
+        // Imprimindo no arquivo de saída
+        fprintf(output_file, "Token: %-20s, Lexema: %-15s, Linha: %d, Coluna: %d\n",
+            token_type_to_string(token->type), token->lexeme, token->line, token->column);
+
+        // Imprimindo no terminal
+        printf("Token: %-20s, Lexema: %-15s, Linha: %d, Coluna: %d\n",
+            token_type_to_string(token->type), token->lexeme, token->line, token->column);
+
         free_token(token);
     } while (token->type != TOKEN_EOF && token->type != TOKEN_ERROR);
 
     fclose(input_file);
+    fclose(output_file);
     free_table(keyword_table);
 
     return 0;
