@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CAPACITY 50000 // Size of the HashTable.
+#define CAPACITY 50000 // Tamanho da HashTable.
 
 unsigned long hash_function(char *str){
     unsigned long i = 0;
@@ -13,21 +13,21 @@ unsigned long hash_function(char *str){
     return i % CAPACITY;
 }
 
-// Defines the HashTable item.
+// Define o item da HashTable.
 typedef struct Ht_item{
     char *key;
     char *value;
 } Ht_item;
 
-// Defines the LinkedList.
+// Define a LinkedList.
 typedef struct LinkedList{
     Ht_item *item;
     struct LinkedList *next;
 } LinkedList;
 
-// Defines the HashTable.
+// Define a HashTable.
 typedef struct HashTable{
-    // Contains an array of pointers to items.
+    // Contém um array de ponteiros para os itens.
     Ht_item **items;
     LinkedList **overflow_buckets;
     int size;
@@ -35,13 +35,13 @@ typedef struct HashTable{
 } HashTable;
 
 LinkedList *allocate_list(){
-    // Allocates memory for a LinkedList pointer.
+    // Aloca memória para um ponteiro LinkedList.
     LinkedList *list = (LinkedList *)malloc(sizeof(LinkedList));
     return list;
 }
 
 LinkedList *linkedlist_insert(LinkedList *list, Ht_item *item){
-    // Inserts the item onto the LinkedList.
+    // Insere o item na LinkedList.
     if (!list)
     {
         LinkedList *head = allocate_list();
@@ -74,8 +74,8 @@ LinkedList *linkedlist_insert(LinkedList *list, Ht_item *item){
 }
 
 Ht_item *linkedlist_remove(LinkedList *list){
-    // Removes the head from the LinkedList.
-    // Returns the item of the popped element.
+    // Remove o primeiro elemento da LinkedList.
+    // Retorna o item do elemento removido.
     if (!list)
         return NULL;
 
@@ -110,7 +110,7 @@ void free_linkedlist(LinkedList *list){
 }
 
 LinkedList **create_overflow_buckets(HashTable *table){
-    // Create the overflow buckets; an array of LinkedLists.
+    // Cria os buckets de overflow; um array de LinkedLists.
     LinkedList **buckets = (LinkedList **)calloc(table->size, sizeof(LinkedList *));
 
     for (int i = 0; i < table->size; i++)
@@ -120,7 +120,7 @@ LinkedList **create_overflow_buckets(HashTable *table){
 }
 
 void free_overflow_buckets(HashTable *table){
-    // Free all the overflow bucket lists.
+    // Libera todas as listas de buckets de overflow.
     LinkedList **buckets = table->overflow_buckets;
 
     for (int i = 0; i < table->size; i++)
@@ -130,7 +130,7 @@ void free_overflow_buckets(HashTable *table){
 }
 
 Ht_item *create_item(char *key, char *value){
-    // Creates a pointer to a new HashTable item.
+    // Cria um ponteiro para um novo item da HashTable.
     Ht_item *item = (Ht_item *)malloc(sizeof(Ht_item));
     item->key = (char *)malloc(strlen(key) + 1);
     item->value = (char *)malloc(strlen(value) + 1);
@@ -140,7 +140,7 @@ Ht_item *create_item(char *key, char *value){
 }
 
 HashTable *create_table(int size){
-    // Creates a new HashTable.
+    // Cria uma nova HashTable.
     HashTable *table = (HashTable *)malloc(sizeof(HashTable));
     table->size = size;
     table->count = 0;
@@ -155,14 +155,14 @@ HashTable *create_table(int size){
 }
 
 void free_item(Ht_item *item){
-    // Frees an item.
+    // Libera um item.
     free(item->key);
     free(item->value);
     free(item);
 }
 
 void free_table(HashTable *table){
-    // Frees the table.
+    // Libera a tabela.
     for (int i = 0; i < table->size; i++)
     {
         Ht_item *item = table->items[i];
@@ -171,7 +171,7 @@ void free_table(HashTable *table){
             free_item(item);
     }
 
-    // Free the overflow bucket lists and its items.
+    // Libera as listas de buckets de overflow e seus itens.
     free_overflow_buckets(table);
     free(table->items);
     free(table);
@@ -182,7 +182,7 @@ void handle_collision(HashTable *table, unsigned long index, Ht_item *item){
 
     if (head == NULL)
     {
-        // Creates the list.
+        // Cria a lista.
         head = allocate_list();
         head->item = item;
         table->overflow_buckets[index] = head;
@@ -190,39 +190,39 @@ void handle_collision(HashTable *table, unsigned long index, Ht_item *item){
     }
     else
     {
-        // Insert to the list.
+        // Insere na lista.
         table->overflow_buckets[index] = linkedlist_insert(head, item);
         return;
     }
 }
 
 void ht_insert(HashTable *table, char *key, char *value){
-    // Creates the item.
+    // Cria o item.
     Ht_item *item = create_item(key, value);
 
-    // Computes the index.
+    // Calcula o índice.
     int index = hash_function(key);
 
     Ht_item *current_item = table->items[index];
 
     if (current_item == NULL)
     {
-        // Key does not exist.
+        // A chave não existe.
         if (table->count == table->size)
         {
-            // HashTable is full.
-            printf("Insert Error: Hash Table is full\n");
+            // A HashTable está cheia.
+            printf("Erro de Inserção: HashTable está cheia\n");
             free_item(item);
             return;
         }
 
-        // Insert directly.
+        // Insere diretamente.
         table->items[index] = item;
         table->count++;
     }
     else
     {
-        // Scenario 1: Update the value.
+        // Cenário 1: Atualiza o valor.
         if (strcmp(current_item->key, key) == 0)
         {
             strcpy(table->items[index]->value, value);
@@ -230,7 +230,7 @@ void ht_insert(HashTable *table, char *key, char *value){
         }
         else
         {
-            // Scenario 2: Handle the collision.
+            // Cenário 2: Trata a colisão.
             handle_collision(table, index, item);
             return;
         }
@@ -238,13 +238,13 @@ void ht_insert(HashTable *table, char *key, char *value){
 }
 
 char *ht_search(HashTable *table, char *key){
-    // Searches for the key in the HashTable.
-    // Returns NULL if it doesn't exist.
+    // Procura a chave na HashTable.
+    // Retorna NULL se não existir.
     int index = hash_function(key);
     Ht_item *item = table->items[index];
     LinkedList *head = table->overflow_buckets[index];
 
-    // Provide only non-NULL values.
+    // Fornece apenas valores não NULL.
     if (item != NULL)
     {
         if (strcmp(item->key, key) == 0)
@@ -261,23 +261,23 @@ char *ht_search(HashTable *table, char *key){
 }
 
 void ht_delete(HashTable *table, char *key){
-    // Deletes an item from the table.
+    // Deleta um item da tabela.
     int index = hash_function(key);
     Ht_item *item = table->items[index];
     LinkedList *head = table->overflow_buckets[index];
 
     if (item == NULL)
     {
-        // Does not exist.
+        // Não existe.
         return;
     }
     else
     {
         if (head == NULL && strcmp(item->key, key) == 0)
         {
-            // Collision chain does not exist.
-            // Remove the item.
-            // Set table index to NULL.
+            // A cadeia de colisão não existe.
+            // Remove o item.
+            // Define o índice da tabela como NULL.
             table->items[index] = NULL;
             free_item(item);
             table->count--;
@@ -285,11 +285,11 @@ void ht_delete(HashTable *table, char *key){
         }
         else if (head != NULL)
         {
-            // Collision chain exists.
+            // A cadeia de colisão existe.
             if (strcmp(item->key, key) == 0)
             {
-                // Remove this item.
-                // Set the head of the list as the new item.
+                // Remove este item.
+                // Define o início da lista como o novo item.
                 free_item(item);
                 LinkedList *node = head;
                 head = head->next;
@@ -309,15 +309,15 @@ void ht_delete(HashTable *table, char *key){
                 {
                     if (prev == NULL)
                     {
-                        // First element of the chain.
-                        // Remove the chain.
+                        // Primeiro elemento da cadeia.
+                        // Remove a cadeia.
                         free_linkedlist(head);
                         table->overflow_buckets[index] = NULL;
                         return;
                     }
                     else
                     {
-                        // This is somewhere in the chain.
+                        // Este está em algum lugar da cadeia.
                         prev->next = curr->next;
                         curr->next = NULL;
                         free_linkedlist(curr);
@@ -338,12 +338,12 @@ void print_search(HashTable *table, char *key){
 
     if ((val = ht_search(table, key)) == NULL)
     {
-        printf("Key:%s does not exist\n", key);
+        printf("Chave:%s não existe\n", key);
         return;
     }
     else
     {
-        printf("Key:%s, Value:%s\n", key, val);
+        printf("Chave:%s, Valor:%s\n", key, val);
     }
 }
 
@@ -354,7 +354,7 @@ void print_table(HashTable *table){
     {
         if (table -> items[i])
         {
-            printf("Index:%d, Key:%s, Value:%s\n", i, table -> items[i] -> key, table -> items[i] -> value);
+            printf("Índice:%d, Chave:%s, Valor:%s\n", i, table -> items[i] -> key, table -> items[i] -> value);
         }
     }
 
