@@ -255,6 +255,25 @@ Token* get_next_token(FILE* file, int* line, int* column) {
     return create_token(TOKEN_ERROR, lexeme, *line, *column);
 }
 
+// Função para verificar se o valor é um número inteiro
+int is_integer(char* lexeme) {
+    for (int i = 0; lexeme[i] != '\0'; i++) {
+        if (lexeme[i] == '.') {
+            return 0; // Não é inteiro
+        }
+    }
+    return 1; // É inteiro
+}
+
+// Função para validar se um valor pode ser atribuído a uma variável inteira
+Token* validate_assignment(Token* token, char* expected_type) {
+    if (strcmp(expected_type, "int") == 0 && !is_integer(token->lexeme)) {
+        printf("\e[0;31mErro: Tentativa de atribuir um valor nao inteiro a variavel de tipo inteiro. Lexema: %s\n\e[0m", token->lexeme);
+        return create_token(TOKEN_ERROR, token->lexeme, token->line, token->column);
+    }
+    return token;
+}
+
 int main(int argc, char* argv[]) {
     if (argc != 2) {
         fprintf(stderr, "Uso: %s <arquivo_de_entrada>\n", argv[0]);
@@ -280,16 +299,24 @@ int main(int argc, char* argv[]) {
 
     int line = 1, column = 0;
     Token* token;
+    char* expected_type = "int";
 
     do {
         token = get_next_token(input_file, &line, &column);
+        token = validate_assignment(token, expected_type);
+
+        // Verifique se o token é um erro
+        if (token->type == TOKEN_ERROR) {
+            printf("\e[0;31mErro detectado: Token invalido na linha %d, coluna %d\n\e[0m", token->line, token->column);
+            break;
+        }
 
         // Imprimindo no arquivo de saída
         fprintf(output_file, "Token: %-20s, Lexema: %-15s, Linha: %d, Coluna: %d\n",
             token_type_to_string(token->type), token->lexeme, token->line, token->column);
 
         // Imprimindo no terminal
-        printf("Token: %-20s, Lexema: %-15s, Linha: %d, Coluna: %d\n",
+        printf("Indice na tabela hash: %d, Token: %-30s, Lexema: %-15s, Linha: %d, Coluna: %d\n", hash_index(token->lexeme),
             token_type_to_string(token->type), token->lexeme, token->line, token->column);
 
         free_token(token);
@@ -300,4 +327,9 @@ int main(int argc, char* argv[]) {
     free_table(keyword_table);
 
     return 0;
+}
+
+int hash_index(char* lexeme) {
+    int index = hash_function(lexeme);
+    return index;
 }
