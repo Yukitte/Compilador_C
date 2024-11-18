@@ -1,335 +1,198 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
-#include "token.h"
-#include "tabelaHash.c"
+#include "tokens.h"
+#include "parser.h"
 
-#define MAX_IDENTIFIER_LENGTH 100
-#define MAX_NUMBER_LENGTH 20
-#define MAX_STRING_LENGTH 1000
+// Function to initialize the token list
+void initTokenList(TokenList *list) {
+    list->head = NULL;
+    list->tail = NULL;
+}
 
-HashTable* keyword_table;
+// Function to create a new token node
+TokenNode *createTokenNode(TokenType type, const char *lexeme, int line, int column) {
+    TokenNode *newNode = (TokenNode *)malloc(sizeof(TokenNode));
+    if (!newNode) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+    newNode->token.type = type;
+    newNode->token.lexeme = strdup(lexeme);
+    newNode->token.line = line;
+    newNode->token.column = column;
+    newNode->next = NULL;
+    return newNode;
+}
 
-// Função para converter o tipo TokenType em string
-const char* token_type_to_string(TokenType type) {
-    switch (type) {
-        case TOKEN_PROGRAM: return "TOKEN_PROGRAM";
-        case TOKEN_VAR: return "TOKEN_VAR";
-        case TOKEN_INTEGER: return "TOKEN_INTEGER";
-        case TOKEN_REAL: return "TOKEN_REAL";
-        case TOKEN_BOOLEAN: return "TOKEN_BOOLEAN";
-        case TOKEN_PROCEDURE: return "TOKEN_PROCEDURE";
-        case TOKEN_BEGIN: return "TOKEN_BEGIN";
-        case TOKEN_END: return "TOKEN_END";
-        case TOKEN_IF: return "TOKEN_IF";
-        case TOKEN_THEN: return "TOKEN_THEN";
-        case TOKEN_ELSE: return "TOKEN_ELSE";
-        case TOKEN_WHILE: return "TOKEN_WHILE";
-        case TOKEN_DO: return "TOKEN_DO";
-        case TOKEN_READ: return "TOKEN_READ";
-        case TOKEN_WRITE: return "TOKEN_WRITE";
-        case TOKEN_ASSIGN: return "TOKEN_ASSIGN";
-        case TOKEN_PLUS: return "TOKEN_PLUS";
-        case TOKEN_MINUS: return "TOKEN_MINUS";
-        case TOKEN_MULTIPLY: return "TOKEN_MULTIPLY";
-        case TOKEN_DIVIDE: return "TOKEN_DIVIDE";
-        case TOKEN_EQ: return "TOKEN_EQ";
-        case TOKEN_NEQ: return "TOKEN_NEQ";
-        case TOKEN_LT: return "TOKEN_LT";
-        case TOKEN_GT: return "TOKEN_GT";
-        case TOKEN_LTE: return "TOKEN_LTE";
-        case TOKEN_GTE: return "TOKEN_GTE";
-        case TOKEN_SEMICOLON: return "TOKEN_SEMICOLON";
-        case TOKEN_COLON: return "TOKEN_COLON";
-        case TOKEN_COMMA: return "TOKEN_COMMA";
-        case TOKEN_DOT: return "TOKEN_DOT";
-        case TOKEN_LPAREN: return "TOKEN_LPAREN";
-        case TOKEN_RPAREN: return "TOKEN_RPAREN";
-        case TOKEN_IDENTIFIER: return "TOKEN_IDENTIFIER";
-        case TOKEN_INTEGER_LITERAL: return "TOKEN_INTEGER_LITERAL";
-        case TOKEN_REAL_LITERAL: return "TOKEN_REAL_LITERAL";
-        case TOKEN_BOOLEAN_LITERAL: return "TOKEN_BOOLEAN_LITERAL";
-        case TOKEN_STRING_LITERAL: return "TOKEN_STRING_LITERAL";
-        case TOKEN_EOF: return "TOKEN_EOF";
-        case TOKEN_ERROR: return "\e[0;31mTOKEN_ERROR\e[0m";
-        default: return "UNKNOWN_TOKEN";
+// Function to add a token to the list
+void addToken(TokenList *list, TokenType type, const char *lexeme, int line, int column) {
+    TokenNode *node = createTokenNode(type, lexeme, line, column);
+    if (!list->head) {
+        list->head = list->tail = node;
+    } else {
+        list->tail->next = node;
+        list->tail = node;
     }
 }
 
-// Inicializa a tabela de palavras-chave
-void init_keyword_table() {
-    keyword_table = create_table(CAPACITY);
-    ht_insert(keyword_table, "program", "TOKEN_PROGRAM");
-    ht_insert(keyword_table, "var", "TOKEN_VAR");
-    ht_insert(keyword_table, "integer", "TOKEN_INTEGER");
-    ht_insert(keyword_table, "real", "TOKEN_REAL");
-    ht_insert(keyword_table, "boolean", "TOKEN_BOOLEAN");
-    ht_insert(keyword_table, "procedure", "TOKEN_PROCEDURE");
-    ht_insert(keyword_table, "begin", "TOKEN_BEGIN");
-    ht_insert(keyword_table, "end", "TOKEN_END");
-    ht_insert(keyword_table, "if", "TOKEN_IF");
-    ht_insert(keyword_table, "then", "TOKEN_THEN");
-    ht_insert(keyword_table, "else", "TOKEN_ELSE");
-    ht_insert(keyword_table, "while", "TOKEN_WHILE");
-    ht_insert(keyword_table, "do", "TOKEN_DO");
-    ht_insert(keyword_table, "read", "TOKEN_READ");
-    ht_insert(keyword_table, "write", "TOKEN_WRITE");
-    ht_insert(keyword_table, "true", "TOKEN_BOOLEAN_LITERAL");
-    ht_insert(keyword_table, "false", "TOKEN_BOOLEAN_LITERAL");
-}
-
-// Obtém o token correspondente à palavra-chave
-TokenType get_keyword_token(const char* lexeme) {
-    char* token_str = ht_search(keyword_table, lexeme);
-    if (token_str == NULL) {
-        return TOKEN_IDENTIFIER;
-    }
-    if (strcmp(token_str, "TOKEN_BOOLEAN_LITERAL") == 0) {
-        return TOKEN_BOOLEAN_LITERAL;
-    }
-    return (TokenType)atoi(token_str);
-}
-
-// Cria um novo token
-Token* create_token(TokenType type, const char* lexeme, int line, int column) {
-    Token* token = (Token*)malloc(sizeof(Token));
-    token->type = type;
-    token->lexeme = strdup(lexeme);
-    token->line = line;
-    token->column = column;
-    return token;
-}
-
-// Libera a memória de um token
-void free_token(Token* token) {
-    if (token) {
-        free(token->lexeme);
-        free(token);
+// Function to free the token list
+void freeTokenList(TokenList *list) {
+    TokenNode *current = list->head;
+    while (current) {
+        TokenNode *temp = current;
+        current = current->next;
+        free(temp->token.lexeme);
+        free(temp);
     }
 }
 
-// Obtém o próximo token do arquivo
-Token* get_next_token(FILE* file, int* line, int* column) {
-    int ch = fgetc(file);
-    while (isspace(ch)) {
-        if (ch == '\n') {
-            (*line)++;
-            *column = 0;
+// Function to tokenize input source code
+void tokenizeSource(const char *source, TokenList *list) {
+    int line = 1, column = 1;
+    char buffer[256];
+    int bufferIndex = 0;
+
+    for (const char *c = source; *c; ++c) {
+        if (*c == ' ' || *c == '\t' || *c == '\n' || *c == ';' || *c == ':' || *c == ',' || *c == '(' || *c == ')' || *c == '.') {
+            // If buffer has content, process it
+            if (bufferIndex > 0) {
+                buffer[bufferIndex] = '\0';  // Null-terminate the buffer
+
+                // Check if the buffer is a keyword, identifier, or literal
+                if (strcmp(buffer, "program") == 0) {
+                    addToken(list, TOKEN_PROGRAM, buffer, line, column - bufferIndex);
+                } else if (strcmp(buffer, "var") == 0) {
+                    addToken(list, TOKEN_VAR, buffer, line, column - bufferIndex);
+                } else if (strcmp(buffer, "begin") == 0) {
+                    addToken(list, TOKEN_BEGIN, buffer, line, column - bufferIndex);
+                } else if (strcmp(buffer, "end") == 0) {
+                    addToken(list, TOKEN_END, buffer, line, column - bufferIndex);
+                } else if (strcmp(buffer, "integer") == 0) {
+                    addToken(list, TOKEN_INTEGER, buffer, line, column - bufferIndex);
+                } else {
+                    // Default to identifier
+                    addToken(list, TOKEN_IDENTIFIER, buffer, line, column - bufferIndex);
+                }
+
+                bufferIndex = 0;  // Reset buffer
+            }
+
+            // Process the current character as a separate token if necessary
+            if (*c == ';') {
+                addToken(list, TOKEN_SEMICOLON, ";", line, column);
+            } else if (*c == ':') {
+                addToken(list, TOKEN_COLON, ":", line, column);
+            } else if (*c == ',') {
+                addToken(list, TOKEN_COMMA, ",", line, column);
+            } else if (*c == '(') {
+                addToken(list, TOKEN_LPAREN, "(", line, column);
+            } else if (*c == ')') {
+                addToken(list, TOKEN_RPAREN, ")", line, column);
+            } else if (*c == '.') {
+                addToken(list, TOKEN_DOT, ".", line, column);
+            }
+
+            if (*c == '\n') {
+                line++;
+                column = 1;
+            } else {
+                column++;
+            }
         } else {
-            (*column)++;
-        }
-        ch = fgetc(file);
-    }
-
-    if (ch == EOF) {
-        return create_token(TOKEN_EOF, "EOF", *line, *column);
-    }
-
-    char lexeme[MAX_STRING_LENGTH + 1];
-    int lexeme_len = 0;
-
-    // Lida com comentários
-    if (ch == '{') {
-        while ((ch = fgetc(file)) != EOF && ch != '}') {
-            if (ch == '\n') {
-                (*line)++;
-                *column = 0;
+            // Accumulate character into buffer
+            if (bufferIndex < sizeof(buffer) - 1) {
+                buffer[bufferIndex++] = *c;
             } else {
-                (*column)++;
+                fprintf(stderr, "Token buffer overflow at line %d, column %d\n", line, column);
+                exit(EXIT_FAILURE);
             }
+            column++;
         }
-        if (ch == EOF) {
-            return create_token(TOKEN_ERROR, "Comentario nao fechado", *line, *column);
-        }
-        (*column)++;
-        return get_next_token(file, line, column); // Chamada recursiva para pegar o próximo token
     }
 
-    if (isalpha(ch) || ch == '_') {
-        // Identificador ou palavra-chave
-        while (isalnum(ch) || ch == '_') {
-            lexeme[lexeme_len++] = ch;
-            (*column)++;
-            ch = fgetc(file);
-        }
-        ungetc(ch, file);
-        lexeme[lexeme_len] = '\0';
-        TokenType type = get_keyword_token(lexeme);
-        return create_token(type, lexeme, *line, *column - lexeme_len + 1);
-    }
-
-    if (isdigit(ch)) {
-        // Número (inteiro ou real)
-        while (isdigit(ch) || ch == '.') {
-            lexeme[lexeme_len++] = ch;
-            (*column)++;
-            ch = fgetc(file);
-        }
-        ungetc(ch, file);
-        lexeme[lexeme_len] = '\0';
-        TokenType type = (strchr(lexeme, '.') != NULL) ? TOKEN_REAL_LITERAL : TOKEN_INTEGER_LITERAL;
-        return create_token(type, lexeme, *line, *column - lexeme_len + 1);
-    }
-
-    if (ch == '\'') {
-        // Literal de string
-        lexeme[lexeme_len++] = ch;
-        (*column)++;
-        while ((ch = fgetc(file)) != EOF && ch != '\'') {
-            if (lexeme_len >= MAX_STRING_LENGTH) {
-                return create_token(TOKEN_ERROR, "Literal de string muito longo", *line, *column);
-            }
-            lexeme[lexeme_len++] = ch;
-            (*column)++;
-            if (ch == '\n') {
-                return create_token(TOKEN_ERROR, "Literal de string não fechado", *line, *column);
-            }
-        }
-        if (ch == EOF) {
-            return create_token(TOKEN_ERROR, "Literal de string não fechado", *line, *column);
-        }
-        lexeme[lexeme_len++] = ch;
-        lexeme[lexeme_len] = '\0';
-        (*column)++;
-        return create_token(TOKEN_STRING_LITERAL, lexeme, *line, *column - lexeme_len + 1);
-    }
-
-    // Tokens de um único caractere e operadores
-    lexeme[0] = ch;
-    lexeme[1] = '\0';
-    (*column)++;
-
-    switch (ch) {
-        case '+': return create_token(TOKEN_PLUS, lexeme, *line, *column);
-        case '-': return create_token(TOKEN_MINUS, lexeme, *line, *column);
-        case '*': return create_token(TOKEN_MULTIPLY, lexeme, *line, *column);
-        case '/': return create_token(TOKEN_DIVIDE, lexeme, *line, *column);
-        case '=': return create_token(TOKEN_EQ, lexeme, *line, *column);
-        case '<':
-            ch = fgetc(file);
-            if (ch == '=') {
-                lexeme[1] = '=';
-                lexeme[2] = '\0';
-                (*column)++;
-                return create_token(TOKEN_LTE, lexeme, *line, *column - 1);
-            } else if (ch == '>') {
-                lexeme[1] = '>';
-                lexeme[2] = '\0';
-                (*column)++;
-                return create_token(TOKEN_NEQ, lexeme, *line, *column - 1);
-            } else {
-                ungetc(ch, file);
-                return create_token(TOKEN_LT, lexeme, *line, *column);
-            }
-        case '>':
-            ch = fgetc(file);
-            if (ch == '=') {
-                lexeme[1] = '=';
-                lexeme[2] = '\0';
-                (*column)++;
-                return create_token(TOKEN_GTE, lexeme, *line, *column - 1);
-            } else {
-                ungetc(ch, file);
-                return create_token(TOKEN_GT, lexeme, *line, *column);
-            }
-        case ':':
-            ch = fgetc(file);
-            if (ch == '=') {
-                lexeme[1] = '=';
-                lexeme[2] = '\0';
-                (*column)++;
-                return create_token(TOKEN_ASSIGN, lexeme, *line, *column - 1);
-            } else {
-                ungetc(ch, file);
-                return create_token(TOKEN_COLON, lexeme, *line, *column);
-            }
-        case ';': return create_token(TOKEN_SEMICOLON, lexeme, *line, *column);
-        case ',': return create_token(TOKEN_COMMA, lexeme, *line, *column);
-        case '.': return create_token(TOKEN_DOT, lexeme, *line, *column);
-        case '(': return create_token(TOKEN_LPAREN, lexeme, *line, *column);
-        case ')': return create_token(TOKEN_RPAREN, lexeme, *line, *column);
-    }
-
-    // Caractere não reconhecido
-    return create_token(TOKEN_ERROR, lexeme, *line, *column);
+    // Add EOF token
+    addToken(list, TOKEN_EOF, "EOF", line, column);
 }
 
-// Função para verificar se o valor é um número inteiro
-int is_integer(char* lexeme) {
-    for (int i = 0; lexeme[i] != '\0'; i++) {
-        if (lexeme[i] == '.') {
-            return 0; // Não é inteiro
+// Main function
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <source_file>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    // Open source file
+    FILE *file = fopen(argv[1], "r");
+    if (!file) {
+        perror("Error opening file");
+        return EXIT_FAILURE;
+    }
+
+    // Read file content into a buffer
+    fseek(file, 0, SEEK_END);
+    long length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    char *buffer = (char *)malloc(length + 1);
+    if (!buffer) {
+        fprintf(stderr, "Memory allocation error\n");
+        fclose(file);
+        return EXIT_FAILURE;
+    }
+    fread(buffer, 1, length, file);
+    buffer[length] = '\0';
+    fclose(file);
+
+    // Initialize token list
+    TokenList tokenList;
+    initTokenList(&tokenList);
+
+    // Tokenize the source code
+    tokenizeSource(buffer, &tokenList);
+    free(buffer);
+
+    FILE *output_file = fopen("output.lex", "w");
+    if (!output_file) {
+        perror("Error opening output file");
+        freeTokenList(&tokenList);
+        return EXIT_FAILURE;
+    }
+
+    // Print lexical analysis results
+    fprintf(output_file, "Lexical Analysis Results:\n");
+    for (TokenNode *node = tokenList.head; node; node = node->next) {
+        fprintf(output_file, "Type: %-5d, Lexeme: %-30s, Line: %-5d, Column: %-5d\n",
+                node->token.type, node->token.lexeme, node->token.line, node->token.column);
+    }
+
+    // Perform syntactic and semantic analysis
+    Parser parser;
+    initParser(&parser, &tokenList, output_file);
+
+    fprintf(output_file, "\nSyntactic and Semantic Analysis Results:\n");
+    if (parse(&parser)) {
+        if (parser.error_count == 0) {
+            fprintf(output_file, "Analysis completed successfully with no errors.\n");
+        } else {
+            fprintf(output_file, "Analysis completed with %d errors.\n", parser.error_count);
         }
-    }
-    return 1; // É inteiro
-}
-
-// Função para validar se um valor pode ser atribuído a uma variável inteira
-Token* validate_assignment(Token* token, char* expected_type) {
-    if (strcmp(expected_type, "int") == 0 && !is_integer(token->lexeme)) {
-        printf("\e[0;31mErro: Tentativa de atribuir um valor nao inteiro a variavel de tipo inteiro. Lexema: %s\n\e[0m", token->lexeme);
-        return create_token(TOKEN_ERROR, token->lexeme, token->line, token->column);
-    }
-    return token;
-}
-
-int main(int argc, char* argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Uso: %s <arquivo_de_entrada>\n", argv[0]);
-        return 1;
+    } else {
+        fprintf(output_file, "Analysis failed with fatal errors.\n");
     }
 
-    FILE* input_file = fopen(argv[1], "r");
-    if (input_file == NULL) {
-        fprintf(stderr, "Erro ao abrir arquivo: %s\n", argv[1]);
-        return 1;
-    }
-
-    char output_filename[256];
-    snprintf(output_filename, sizeof(output_filename), "%s.lex", argv[1]);
-    FILE* output_file = fopen(output_filename, "w");
-    if (output_file == NULL) {
-        fprintf(stderr, "Erro ao criar o arquivo de saída: %s\n", output_filename);
-        fclose(input_file);
-        return 1;
-    }
-
-    init_keyword_table();
-
-    int line = 1, column = 0;
-    Token* token;
-    char* expected_type = "int";
-
-    do {
-        token = get_next_token(input_file, &line, &column);
-        token = validate_assignment(token, expected_type);
-
-        // Verifique se o token é um erro
-        if (token->type == TOKEN_ERROR) {
-            printf("\e[0;31mErro detectado: Token invalido na linha %d, coluna %d\n\e[0m", token->line, token->column);
-            break;
-        }
-
-        // Imprimindo no arquivo de saída
-        fprintf(output_file, "Token: %-20s, Lexema: %-15s, Linha: %d, Coluna: %d\n",
-            token_type_to_string(token->type), token->lexeme, token->line, token->column);
-
-        // Imprimindo no terminal
-        printf("Indice na tabela hash: %d, Token: %-30s, Lexema: %-15s, Linha: %d, Coluna: %d\n", hash_index(token->lexeme),
-            token_type_to_string(token->type), token->lexeme, token->line, token->column);
-
-        free_token(token);
-    } while (token->type != TOKEN_EOF && token->type != TOKEN_ERROR);
-
-    fclose(input_file);
+    freeParser(&parser);
     fclose(output_file);
-    free_table(keyword_table);
 
-    return 0;
-}
+    // Print tokens
+    printf("Tokens:\n");
+    for (TokenNode *node = tokenList.head; node; node = node->next) {
+        printf("Type: %-5d, Lexeme: %-30s, Line: %-5d, Column: %-5d\n",
+               node->token.type, node->token.lexeme, node->token.line, node->token.column);
+    }
 
-int hash_index(char* lexeme) {
-    int index = hash_function(lexeme);
-    return index;
+    // Free token list
+    freeTokenList(&tokenList);
+
+    return EXIT_SUCCESS;
 }
