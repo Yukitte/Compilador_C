@@ -1,0 +1,55 @@
+Lexical Analysis Results:
+Type: 0    , Lexeme: program                       , Line: 1    , Column: 1    
+Type: 32   , Lexeme: VariavelNaoDeclarada          , Line: 1    , Column: 9    
+Type: 26   , Lexeme: ;                             , Line: 1    , Column: 29   
+Type: 1    , Lexeme: var                           , Line: 2    , Column: 1    
+Type: 32   , Lexeme: a                             , Line: 3    , Column: 5    
+Type: 28   , Lexeme: ,                             , Line: 3    , Column: 6    
+Type: 32   , Lexeme: b                             , Line: 3    , Column: 8    
+Type: 27   , Lexeme: :                             , Line: 3    , Column: 9    
+Type: 2    , Lexeme: integer                       , Line: 3    , Column: 11   
+Type: 26   , Lexeme: ;                             , Line: 3    , Column: 18   
+Type: 6    , Lexeme: begin                         , Line: 4    , Column: 1    
+Type: 32   , Lexeme: a                             , Line: 5    , Column: 5    
+Type: 27   , Lexeme: :                             , Line: 5    , Column: 7    
+Type: 32   , Lexeme: =                             , Line: 5    , Column: 8    
+Type: 32   , Lexeme: 5                             , Line: 5    , Column: 10   
+Type: 26   , Lexeme: ;                             , Line: 5    , Column: 11   
+Type: 32   , Lexeme: b                             , Line: 6    , Column: 5    
+Type: 27   , Lexeme: :                             , Line: 6    , Column: 7    
+Type: 32   , Lexeme: =                             , Line: 6    , Column: 8    
+Type: 32   , Lexeme: 10                            , Line: 6    , Column: 10   
+Type: 26   , Lexeme: ;                             , Line: 6    , Column: 12   
+Type: 32   , Lexeme: soma                          , Line: 7    , Column: 5    
+Type: 27   , Lexeme: :                             , Line: 7    , Column: 10   
+Type: 32   , Lexeme: =                             , Line: 7    , Column: 11   
+Type: 32   , Lexeme: a                             , Line: 7    , Column: 13   
+Type: 32   , Lexeme: +                             , Line: 7    , Column: 15   
+Type: 32   , Lexeme: b                             , Line: 7    , Column: 17   
+Type: 26   , Lexeme: ;                             , Line: 7    , Column: 18   
+Type: 32   , Lexeme: {                             , Line: 7    , Column: 21   
+Type: 32   , Lexeme: Erro                          , Line: 7    , Column: 23   
+Type: 27   , Lexeme: :                             , Line: 7    , Column: 27   
+Type: 32   , Lexeme: 'soma'                        , Line: 7    , Column: 29   
+Type: 32   , Lexeme: não                          , Line: 7    , Column: 36   
+Type: 32   , Lexeme: foi                           , Line: 7    , Column: 41   
+Type: 32   , Lexeme: declarada                     , Line: 7    , Column: 45   
+Type: 32   , Lexeme: }                             , Line: 7    , Column: 55   
+Type: 32   , Lexeme: writeln                       , Line: 8    , Column: 5    
+Type: 30   , Lexeme: (                             , Line: 8    , Column: 12   
+Type: 32   , Lexeme: 'A                            , Line: 8    , Column: 13   
+Type: 32   , Lexeme: soma                          , Line: 8    , Column: 16   
+Type: 32   , Lexeme: é                            , Line: 8    , Column: 21   
+Type: 27   , Lexeme: :                             , Line: 8    , Column: 23   
+Type: 32   , Lexeme: '                             , Line: 8    , Column: 25   
+Type: 28   , Lexeme: ,                             , Line: 8    , Column: 26   
+Type: 32   , Lexeme: soma                          , Line: 8    , Column: 28   
+Type: 31   , Lexeme: )                             , Line: 8    , Column: 32   
+Type: 26   , Lexeme: ;                             , Line: 8    , Column: 33   
+Type: 32   , Lexeme: end                           , Line: 9    , Column: 1    
+Type: 29   , Lexeme: .                             , Line: 9    , Column: 4    
+Type: 37   , Lexeme: EOF                           , Line: 10   , Column: 1    
+
+Syntactic and Semantic Analysis Results:
+Syntax Error: Expected token type 27 at line 3, column 6
+Analysis failed with fatal errors.
